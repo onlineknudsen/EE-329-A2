@@ -9,7 +9,7 @@
 #include "keypad.h"
 
 // Keypad LUT
-int keypadLUT[NUM_ROWS][NUM_COLS] = {
+const int keypadLUT[NUM_ROWS][NUM_COLS] = {
 		{1, 2, 3, 0xA},
 		{4, 5, 6, 0xB},
 		{7, 8, 9, 0xC},
