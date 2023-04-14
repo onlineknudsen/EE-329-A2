@@ -34,37 +34,13 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-// Inputs
-#define ROW0 GPIO_PIN_8 // PD8
-#define ROW1 GPIO_PIN_9 // PD9
-#define ROW2 GPIO_PIN_14 // PDE
-#define ROW3 GPIO_PIN_15 // PDF
-
-// Outputs
-#define COL0 GPIO_PIN_4 // PD4
-#define COL1 GPIO_PIN_5 // PD5
-#define COL2 GPIO_PIN_6 // PD6
-#define COL3 GPIO_PIN_7 // PD7
-
-// Outputs
-#define LED0 GPIO_PIN_0 // PD0
-#define LED1 GPIO_PIN_1 // PD1
-#define LED2 GPIO_PIN_2 // PD2
-#define LED3 GPIO_PIN_3 // PD3
-
-// Debounce parameters
-#define DEBOUNCE_ATTEMPTS 50
-#define DEBOUNCE_COUNT 30
-#define DEBOUNCE_INTERVAL 1000
-
-
-//
+#include "keypad.h"
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+
 void InitGPIO(void);
-int ReadKeypad(void);
+void Write4BitLEDs(int num);
 
 /**
   * @brief  The application entry point.
@@ -86,7 +62,12 @@ int main(void)
 
   while (1)
   {
-	  ReadKeypad();
+	  int key = ReadKeypad();
+	  if (key > -1) // if we have a key press
+	  {
+		  // Update LEDs
+		  Write4BitLEDs(key);
+	  }
   }
 }
 
@@ -135,7 +116,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+// Initialize GPIO Registers
 void InitGPIO(void)
 {
 	// Initialize Port D GPIO
@@ -182,57 +163,11 @@ void InitGPIO(void)
 	GPIOD->ODR = 0;
 }
 
-int ReadKeypad(void)
+// Writes a 4 bit value to the LEDs
+void Write4BitLEDs(int num)
 {
-	int key = -1;
-	// Loop through all rows
-	for(uint8_t col = 0; col < 4; col++)
-	{
-		// Loop through all columns
-		GPIOD->BSRR = (0b1 << col) << 4 | (~(0b1 << col) << 4) << 16;
-		for(uint8_t row = 0; row < 4; row++)
-		{
-			// due to non-consecutive ports, we have to calculate the pin position from the given row
-			int rowPos;
-			if(row > 1)
-			{
-				rowPos = row % 2 + 14;
-			}
-			else
-			{
-				rowPos = row % 2 + 8;
-			}
-
-			uint16_t input = GPIOD->IDR & (0b1 << rowPos);
-			// if this specific row and this specific column is pressed
-			if (input)
-			{
-				// debounce it
-
-				// Check for 30 highs in a row
-				int highCount = 0;
-				for(int i = 0; i < DEBOUNCE_ATTEMPTS; i++)
-				{
-					// Delay
-					for(int j = 0; j < DEBOUNCE_INTERVAL; j++);
-					input = GPIOD->IDR & (0b1 << rowPos);
-
-					if(input)
-						highCount++;
-					else
-						highCount = 0;
-
-					// If we have 30 highs in a row
-					if(highCount >= DEBOUNCE_COUNT)
-						break;
-				}
-
-				// Map to number
-
-			}
-		}
-	}
-	return key;
+	// Mask and set and clear corresponding bits
+	GPIOD->BSRR = (0xF & num) | ((0xF & ~num) << 16);
 }
 
 /* USER CODE END 4 */
